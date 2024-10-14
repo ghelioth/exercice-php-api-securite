@@ -11,13 +11,16 @@ services:
       # Run "composer require symfony/mercure-bundle" to install and configure the Mercure integration
       MERCURE_URL: ${CADDY_MERCURE_URL:-http://php/.well-known/mercure}
       MERCURE_PUBLIC_URL: ${CADDY_MERCURE_PUBLIC_URL:-https://${SERVER_NAME:-localhost}/.well-known/mercure}
-      MERCURE_JWT_SECRET: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      MERCURE_JWT_SECRET: ${CADDY_MERCURE_JWT_SECRET:-Bk6Cyr0hKe9DMIXfWg46w8oWkGNbZlk3KCs17DFxX4w=}
       # The two next lines can be removed after initial installation
       SYMFONY_VERSION: ${SYMFONY_VERSION:-}
       STABILITY: ${STABILITY:-stable}
     volumes:
       - caddy_data:/data
       - caddy_config:/config
+
+    networks:
+      - app-network
     ports:
       # HTTP
       - target: 80
@@ -40,7 +43,7 @@ services:
   database:
     image: mariadb:11.4.3
     environment:
-      MARIADB_DATABASE: ${MYSQL_DATABASE:-app}
+      MARIADB_DATABASE: ${MYSQL_DATABASE:-root}
       MARIADB_ROOT_PASSWORD: ${MYSQL_PASSWORD:-password}
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
@@ -48,7 +51,28 @@ services:
       retries: 5
       start_period: 60s
     volumes:
-      - database_data:/var/lib/mysql:rw###< doctrine/doctrine-bundle ###
+      - database_data:/var/lib/mysql:rw
+    ports:
+      - "3306:3306"
+    networks:
+      - app-network
+###< doctrine/doctrine-bundle ###
+
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    ports:
+      - 8081:80
+    environment:
+      PMA_HOST: database
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-password}
+    networks:
+      - app-network
+
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   caddy_data:
